@@ -1,5 +1,8 @@
-﻿using System.CommandLine;
-using System.CommandLine.Invocation;
+﻿using cli;
+using Corvus.Json;
+using System.CommandLine;
+using System.Text;
+using System.Text.Json;
 
 
 class Program
@@ -23,32 +26,47 @@ class Program
 
         rootCommand.SetHandler(
             (fileValue, urlValue) =>
-                {
-                    //Validate URL by converting to URI
+                { 
+                    // Validate URL by converting to URI
                     Uri? url = null;
                     try
                     {
                         url = new Uri(urlValue);
                     }
-                    catch (System.Exception e)
+                    catch (Exception e)
                     {
                         Console.WriteLine(e.Message);
-                        System.Environment.Exit(1);
+                        Environment.Exit(1);
                     }
 
-                    //Validate Path by checking if it exists and json extension
+                    // Validate Path by checking if it exists and json extension
                     if(!Path.Exists(fileValue) || !Path.GetExtension(fileValue).Equals(".json", StringComparison.OrdinalIgnoreCase))
                     {
                         Console.WriteLine("File not valid.");
-                        System.Environment.Exit(1);
+                        Environment.Exit(1);
                     }
 
-                    // Application logic 
-                    Console.WriteLine($"File: {fileValue}");
+                    // Read File and parse into the schema (Without validating)
+                    VulnerabilitySchema? schema = null;
+                    try
+                    {
+                        using (Stream streamReader = new StreamReader(fileValue, Encoding.UTF8).BaseStream)
+                        {
+                            schema = VulnerabilitySchema.Parse(streamReader);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e.Message);
+                        Environment.Exit(1);
+                    }
+
+                    //TODO Go through all vulnerabilites, first validating them, logging if there is an issue and then posting them to the API
+                    Console.WriteLine($"File: {schema.Value.Vulnerabilities[0].IsValid()}");
                     Console.WriteLine($"Url: {url}");
-                },
-                fileOption,
-                urlOption
+                    },
+                    fileOption,
+                    urlOption
         );
 
         return rootCommand.Invoke(args);
