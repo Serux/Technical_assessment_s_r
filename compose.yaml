@@ -1,0 +1,16 @@
+services:
+  api:
+    build: ./api
+    ports:
+      - "8000:8000"
+  vulnerability-cli:
+    build: ./cli
+    volumes:
+      - ./cli/files:/files
+      - ./cli/logs:/logs
+  mongodb:
+    image: mongo:6-jammy
+    ports:
+      - '27017:27017'
+    volumes:
+      - ./database:/data/db
