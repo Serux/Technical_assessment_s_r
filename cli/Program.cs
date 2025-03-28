@@ -1,6 +1,7 @@
 ﻿using cli;
 using Corvus.Json;
 using System.CommandLine;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 
@@ -13,7 +14,7 @@ class Program
         var fileOption = new Option<string>("--file", "Path to JSON file to process.") { IsRequired = true };
         fileOption.ArgumentHelpName = "FILEPATH";
         var urlOption = new Option<string>("--url", "URL to the CVE API where the JSON elements will be added.") { IsRequired = true };
-        urlOption.ArgumentHelpName = "URL";
+        urlOption.ArgumentHelpName = "BASEURL";
 
         var rootCommand = new RootCommand(
             $"Reads and parses a JSON file containing CVE vulnerabilities definitions and sends each to the API.{Environment.NewLine}{Environment.NewLine}" 
@@ -25,13 +26,13 @@ class Program
 
 
         rootCommand.SetHandler(
-            (fileValue, urlValue) =>
+            async (fileValue, urlValue) =>
                 { 
                     // Validate URL by converting to URI
-                    Uri? url = null;
+                    Uri? baseurl = null;
                     try
                     {
-                        url = new Uri(urlValue);
+                        baseurl = new Uri(urlValue);
                     }
                     catch (Exception e)
                     {
@@ -61,9 +62,31 @@ class Program
                         Environment.Exit(1);
                     }
 
-                    //TODO Go through all vulnerabilites, first validating them, logging if there is an issue and then posting them to the API
-                    Console.WriteLine($"File: {schema.Value.Vulnerabilities[0].IsValid()}");
-                    Console.WriteLine($"Url: {url}");
+                    // Validates each item and sends it in an async way to the API.
+                    List<Task> tasks = new List<Task>();
+                    foreach (var item in schema.Value.Vulnerabilities)
+                    {
+                        var result = item.Validate(ValidationContext.ValidContext, ValidationLevel.Detailed);
+
+                        if (!result.IsValid)
+                        {
+                            //TODO LOG VALIDATION ERRORS
+                            foreach (ValidationResult error in result.Results)
+                            {
+                                Console.WriteLine(error);
+                            }
+                        }
+                        else
+                        {
+                            //Launche each tasks as async and adds it to a list to await for every task to finish.
+                            tasks.Add(PostVulnerability(baseurl, item));
+                        }
+
+                    }
+
+                    //Awaits until all the tasks finish
+                    await Task.WhenAll(tasks);
+
                     },
                     fileOption,
                     urlOption
@@ -71,4 +94,29 @@ class Program
 
         return rootCommand.Invoke(args);
     }
+
+    public static async Task PostVulnerability(Uri baseurl, VulnerabilitySchema.Vulnerability vuln)
+    {
+        var vulnJson = vuln.AsJsonElement.ToString();
+        Console.WriteLine($"Sending {vuln.Title}");
+        HttpClient client = new HttpClient();
+        client.BaseAddress = baseurl;
+        try
+        {
+            var response = await client.PostAsync("vulnerability", new StringContent(vulnJson, Encoding.UTF8, "application/json"));
+            if (response != null)
+            {
+                Console.WriteLine(response.Content.ReadAsStringAsync().Result);
+            }
+
+        }
+        catch (Exception e)
+        {
+            //TODO ERROR LOG if connection to server is not possible and other server errors.
+            Console.WriteLine(e);
+            throw;
+        }
+       
+    }
 }
+
