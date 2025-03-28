@@ -1,3 +1,5 @@
 cli/bin
 cli/obj
 .vs
+.venv
+__pycache__
