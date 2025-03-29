@@ -1,6 +1,8 @@
 services:
   api:
     build: ./api
+    environment:
+      - MONGOURL=mongodb://mongodb:27017/
     ports:
       - "8000:8000"
   vulnerability-cli:
@@ -8,6 +10,7 @@ services:
     volumes:
       - ./cli/files:/files
       - ./cli/logs:/logs
+    profiles: ["cli-only"]
   mongodb:
     image: mongo:6-jammy
     ports:
