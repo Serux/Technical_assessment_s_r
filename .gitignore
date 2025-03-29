@@ -1,6 +1,7 @@
-cli/bin
-cli/obj
+cli/src/bin
+cli/src/obj
 .vs
 .venv
 __pycache__
 database/*
+!database

@@ -2,7 +2,7 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0@sha256:3fcf6f1e809c0553f9feb222369f58749af
 
 WORKDIR /App
 
-COPY . ./
+COPY ./src ./
 
 # Restore as distinct layers
 RUN dotnet restore

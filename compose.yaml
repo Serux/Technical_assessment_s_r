@@ -8,7 +8,7 @@ services:
   vulnerability-cli:
     build: ./cli
     volumes:
-      - ./cli/files:/files
+      - ./files:/files
       - ./cli/logs:/logs
     profiles: ["cli-only"]
   mongodb:
