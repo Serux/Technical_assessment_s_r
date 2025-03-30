@@ -5,6 +5,8 @@ services:
       - MONGOURL=mongodb://mongodb:27017/
     ports:
       - "8000:8000"
+    volumes:
+      - ./api/logs:/code/logs
   vulnerability-cli:
     build: ./cli
     volumes:

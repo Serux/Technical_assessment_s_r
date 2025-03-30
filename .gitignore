@@ -1,6 +1,7 @@
 cli/src/bin
 cli/src/obj
 cli/logs
+api/logs
 .vs
 .venv
 __pycache__

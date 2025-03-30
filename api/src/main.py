@@ -6,6 +6,9 @@ from pydantic import BaseModel, Field, BeforeValidator
 from pymongo import MongoClient, ASCENDING, errors
 from bson.json_util import dumps
 from os import environ
+import logging
+import sys
+
 
 ### CONSTANTS
 CVE_PATTERN : str = '^CVE-\d{4}-\d{4,7}$'
@@ -40,21 +43,56 @@ app = FastAPI(title="CVE API", description="API that handles CRUD operations for
 
 @app.on_event("startup")
 async def startup_db_client():
-    # MongoDB url defined by environment variable, with the url from docker-compose by default.
-    client = MongoClient(environ.get("MONGO_URL", "mongodb://mongodb:27017/"))
+    # LOGGER
+    ## Formats the log with time, number of line, level of logging and message.
+    formatter = logging.Formatter('%(asctime)s | %(lineno)3d | %(levelname)5s | %(message)s')
+    ## Handles logs to create a new log each day
+    handler = logging.handlers.TimedRotatingFileHandler("./logs/api.log", when="midnight", interval=1)
+    handler.suffix = "_%Y%m%d.log"
+    handler.setLevel(logging.INFO)
+    handler.setFormatter(formatter)
+    app.logger = logging.getLogger(__name__)
+    app.logger.setLevel(logging.INFO)    
+    app.logger.addHandler(handler)
+    app.logger.info("Starting FastAPI.")
     
+    mongourl=environ.get("MONGO_URL", "mongodb://mongodb:27017/")
+    
+    try:    
+        app.logger.info(f"Connecting to mongodb with URL: {mongourl}")
+        # MongoDB url defined by environment variable, with the url from docker-compose by default.
+        client = MongoClient(mongourl)
+    except:
+        app.logger.exception(f"Exception Connecting to mongodb with URL: {mongourl}")
+        sys.exit(1) 
+        
     # For easier access to the database, adding it to app.
     app.mongodb = client["database"]
     
     # Ensures that indexes exists, if not creates them 
-    # Index for filtering Cve and to be unique 
-    app.mongodb.vulnerabilities.create_index([("cve", ASCENDING)], unique=True)
-    # Index for filtering only by criticality
-    app.mongodb.vulnerabilities.create_index([("criticality",ASCENDING)])
-    # Index for the combined filter of title contains text and criticality
-    app.mongodb.vulnerabilities.create_index([("title", "text",),("criticality",ASCENDING)])
+    try:
+        # Index for filtering Cve and to be unique 
+        app.mongodb.vulnerabilities.create_index([("cve", ASCENDING)], unique=True)
+    except:
+        app.logger.exception("Exception creating or ensuring cve index")
+        sys.exit(1) 
     
+    try:
+        # Index for filtering only by criticality
+        app.mongodb.vulnerabilities.create_index([("criticality",ASCENDING)])
+    except:
+        app.logger.exception("Exception creating or ensuring criticality index in mongodb")
+        sys.exit(1) 
     
+    try:
+        # Index for the combined filter of title contains text and criticality
+        app.mongodb.vulnerabilities.create_index([("title", "text",),("criticality",ASCENDING)])
+    except:
+        app.logger.exception("Exception creating or ensuring title+criticality index in mongodb")
+        sys.exit(1) 
+    
+ 
+
 
 
 @app.get("/vulnerability", responses=RESPONSE_CODES)
@@ -75,8 +113,14 @@ async def get_all_vulnerabilities(filter_query: Annotated[Vulnerabilities_Filter
             query['criticality'] |= {'$gte': filter_query.min}
         if(filter_query.max!=None):
             query['criticality'] |= {'$lte': filter_query.max}
+            
+    try:   
+        vulnerability_list : list[Vulnerability] = app.mongodb.vulnerabilities.find(query).to_list()
+    except:
+        app.logger.exception(f"Exception in find query: {query}")
+        raise HTTPException(status_code=500)
     
-    return VulnerabilityCollection(vulnerabilities=app.mongodb.vulnerabilities.find(query).to_list())
+    return VulnerabilityCollection(vulnerabilities=vulnerability_list)
 
 
 @app.get("/vulnerability/{cve}", responses=RESPONSE_CODES)
@@ -88,6 +132,7 @@ async def get_vulnerability(cve : Annotated[str, Path(pattern=CVE_PATTERN, title
     try:
         item = app.mongodb.vulnerabilities.find_one( {'cve': cve},{'_id':0})
     except:
+        app.logger.exception(f"Exception in find_one cve: {cve}")
         raise HTTPException(status_code=500)
     if(item == None):
         return JSONResponse(status_code=404, content={"message": "Item not found"})
@@ -106,13 +151,14 @@ async def post_vulnerability(vulnerability : Annotated[Vulnerability, Body()]):
         inserted_vuln = app.mongodb.vulnerabilities.insert_one(vulnerability_dict)
     except errors.DuplicateKeyError:
         return JSONResponse(status_code=400, content={"message": "Duplicated CVE : " + vulnerability.cve })
-        
     except:
+        app.logger.exception("Exception while inserting one: {vulnerability_dict}")
         raise HTTPException(status_code=500)
     
     try:
         db_inserted_vuln = app.mongodb.vulnerabilities.find_one( {"_id": inserted_vuln.inserted_id},{'_id':0})
     except:
+        app.logger.exception("Exception in find_one _if: {inserted_vuln.inserted_id}")
         raise HTTPException(status_code=500)
     
     if(db_inserted_vuln == None):
@@ -131,6 +177,7 @@ async def delete_vulnerability(cve : Annotated[str, Path(pattern=CVE_PATTERN, ti
     try:
         delete_result = app.mongodb.vulnerabilities.find_one_and_delete({'cve': cve},{'_id':0})
     except:
+        app.logger.exception(f"Exception find_one_and_delete: {cve}")
         raise HTTPException(status_code=500)
     
     if(delete_result == None):
