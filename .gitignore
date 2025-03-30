@@ -1,7 +1,7 @@
 cli/src/bin
 cli/src/obj
+cli/logs
 .vs
 .venv
 __pycache__
 database/*
-!database

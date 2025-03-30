@@ -9,7 +9,7 @@ services:
     build: ./cli
     volumes:
       - ./files:/files
-      - ./cli/logs:/logs
+      - ./cli/logs:/cli/logs
     profiles: ["cli-only"]
   mongodb:
     image: mongo:6-jammy

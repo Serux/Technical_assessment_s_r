@@ -1,4 +1,4 @@
 Models generated with Corvus (https://github.com/corvus-dotnet/Corvus.JsonSchema):  
 
 dotnet tool install --global Corvus.Json.JsonSchema.TypeGeneratorTool
-generatejsonschematypes --rootNamespace cli --outputPath ./models/ ./files/vulnerability_schema.json
+generatejsonschematypes --rootNamespace cli --outputPath ./models/ ../files/vulnerability_schema.json
