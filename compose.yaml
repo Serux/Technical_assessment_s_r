@@ -10,7 +10,7 @@ services:
     volumes:
       - ./files:/files
       - ./cli/logs:/cli/logs
-    profiles: ["cli-only"]
+    #profiles: ["cli-only"]
   mongodb:
     image: mongo:6-jammy
     ports:

@@ -1,13 +1,11 @@
-﻿using cli;
+﻿using CorvusVulnerabilitySchema;
 using Corvus.Json;
 using System.CommandLine;
-using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using Serilog.Core;
 using Serilog.Events;
+using System.Net;
 
 class Program
 {
@@ -152,7 +150,14 @@ class Program
             var response = await client.PostAsync("vulnerability", new StringContent(vulnJson, Encoding.UTF8, "application/json"));
             if (response != null)
             {
-                _logger.LogInformation($"Response: {response.Content.ReadAsStringAsync().Result}.");
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    _logger.LogInformation($"Correctly saved element: {response.Content.ReadAsStringAsync().Result}.");
+                } 
+                else
+                {
+                    _logger.LogError($"Element not saved: {response.Content.ReadAsStringAsync().Result}.");
+                }
             }
 
         }
