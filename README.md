@@ -51,8 +51,8 @@ docker-compose up mongodb
 ```
 ## Tests 
 ### API Tests
-//TODO Not all functions on the API have tests. 
-//TODO There is no automated cleanup functions (or Mocks) for tests to have repetible results
+//TODO Not all functions on the API have tests.   
+//TODO There is no automated cleanup functions (or Mocks) for tests to have repetible results  
 
 The testing of the api can be executed by:
 ```bash
@@ -69,8 +69,8 @@ Sometimes there can be a problem with the container trying to connect to a delet
 docker-compose up api-test --build --force-recreate
 ```
 ### CLI Tests
-//TODO Not all Functionality of CLI is tested
-//TODO Tests of CLI executes directly the dll, but dividing the code in functions and testing them might give better test results.
+//TODO Not all Functionality of CLI is tested  
+//TODO Tests of CLI executes directly the dll, but dividing the code in functions and testing them might give better test results.  
 
 The tests can be executed by:
 ```bash
