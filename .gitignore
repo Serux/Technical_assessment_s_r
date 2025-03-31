@@ -1,0 +1,8 @@
+bin
+obj
+logs
+
+.vs
+.venv
+__pycache__
+database

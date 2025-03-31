@@ -1,0 +1,6 @@
+fastapi[standard]==0.115.12
+pydantic==2.11.1
+pymongo==4.11.3
+pytest==8.3.5
+pytest-asyncio==0.26.0
+httpx==0.28.1

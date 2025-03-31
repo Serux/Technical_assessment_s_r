@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "cli": {
+      "commandName": "Project",
+      "commandLineArgs": "--file \"./files/ten_elements.json\" --url \"http://localhost:8000/\"",
+      "workingDirectory": ".\\"
+    }
+  }
+}
