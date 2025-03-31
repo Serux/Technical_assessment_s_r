@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, BeforeValidator
 from pymongo import MongoClient, ASCENDING, errors
 from bson.json_util import dumps
 from os import environ
+from contextlib import asynccontextmanager
 import logging
 import sys
 
@@ -39,10 +40,18 @@ class Vulnerabilities_FilterParams(BaseModel):
 
 ### FASTAPI
 
-app = FastAPI(title="CVE API", description="API that handles CRUD operations for CVE vulnerabilities.")
 
-@app.on_event("startup")
-async def startup_db_client():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    configure_logger()
+    configure_mongodb()
+    yield
+    
+app = FastAPI(title="CVE API", description="API that handles CRUD operations for CVE vulnerabilities.",lifespan=lifespan)
+    
+    
+ 
+def configure_logger():
     # LOGGER
     ## Formats the log with time, number of line, level of logging and message.
     formatter = logging.Formatter('%(asctime)s | %(lineno)3d | %(levelname)5s | %(message)s')
@@ -56,6 +65,7 @@ async def startup_db_client():
     app.logger.addHandler(handler)
     app.logger.info("Starting FastAPI.")
     
+def configure_mongodb():
     mongourl=environ.get("MONGO_URL", "mongodb://mongodb:27017/")
     
     try:    
@@ -90,10 +100,7 @@ async def startup_db_client():
     except:
         app.logger.exception("Exception creating or ensuring title+criticality index in mongodb")
         sys.exit(1) 
-    
- 
-
-
+        
 
 @app.get("/vulnerability", responses=RESPONSE_CODES)
 async def get_all_vulnerabilities(filter_query: Annotated[Vulnerabilities_FilterParams, Query()]):

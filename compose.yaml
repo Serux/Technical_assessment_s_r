@@ -7,12 +7,32 @@ services:
       - "8000:8000"
     volumes:
       - ./api/logs:/code/logs
+    depends_on:
+      - mongodb
+  api-test:
+    build: ./api
+    environment:
+      - MONGOURL=mongodb://mongodb:27017/
+    command: pytest tests/ -v
+    profiles: ["tests"]
+    depends_on:
+      - api
+      - mongodb
   vulnerability-cli:
     build: ./cli
     volumes:
       - ./files:/files
       - ./cli/logs:/cli/logs
-    #profiles: ["cli-only"]
+    profiles: ["cli-only"]
+  cli-test:
+    build:
+      context: ./cli
+      dockerfile: Dockerfile.test
+    volumes:
+      - ./files:/files
+      - ./cli:/app
+    profiles: ["tests"]
+
   mongodb:
     image: mongo:6-jammy
     ports:

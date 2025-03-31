@@ -21,7 +21,7 @@ docker-compose build
 ```
 
 To start the system, execute:
-```
+```bash
 docker-compose up
 ```
 If there is no previous MongoDB docker image, it will be downloaded at this point and system will start running.
@@ -39,6 +39,45 @@ Where:
 
 The CLI will read the JSON file, POST it to the API and store it into the MondoDB database.
 
+When you are finished, to stop and remove the containers:
+```bash
+docker-compose down
+```
+To start only one of the containers, you can use:
+```bash
+docker-compose up api
+docker-compose up vulnerability-cli
+docker-compose up mongodb
+```
+## Tests 
+### API Tests
+//TODO Not all functions on the API have tests. 
+//TODO There is no automated cleanup functions (or Mocks) for tests to have repetible results
+
+The testing of the api can be executed by:
+```bash
+docker-compose up api-test --build
+```
+To repeat the tests, you can:
+```bash
+docker-compose down
+```
+Then, delete the folder "database" and execute again. 
+
+Sometimes there can be a problem with the container trying to connect to a deleted network, adding the parameter `--force-recreate` solves the problem.
+```bash
+docker-compose up api-test --build --force-recreate
+```
+### CLI Tests
+//TODO Not all Functionality of CLI is tested
+//TODO Tests of CLI executes directly the dll, but dividing the code in functions and testing them might give better test results.
+
+The tests can be executed by:
+```bash
+docker-compose up cli-test --build --force-recreate
+```
+
+
 
 ## System structure
 The system has the following main elements:
@@ -47,6 +86,7 @@ The system has the following main elements:
 - - pymongo to connecto to MongoDB
 - - pydantic for security to validate parameters  
 - - formatted python logging in file, with one new file per day.
+- - security has been checked with "bandit", a python vulnerability scanner.
 - C# CLI, in the folder "cli" 
 - - Made with System.CommandLine for managing command line parameters.
 - - Corvus (https://github.com/corvus-dotnet/Corvus.JsonSchema) for generating automatically the Models from a json schema and for validating JSON (More info in cli/corvus.txt).
